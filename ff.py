@@ -1,0 +1,85 @@
+import requests
+import telebot
+
+# 🔹 Bot Configuration
+BOT_TOKEN = "8405694741:AAHeD2D8J032w-9TqMR36n7Zdv0K49lVYm4"
+OWNER_ID = "123456789"
+OWNER_NAME = "SHAZZ"
+
+bot = telebot.TeleBot(BOT_TOKEN, parse_mode="Markdown")
+
+@bot.message_handler(commands=['start'])
+def start(msg):
+    bot.reply_to(
+        msg,
+        "🤖 *Welcome to LikeBot!*\n"
+        "Use `/like <server> <uid>` to send likes!\n\n"
+        "Example:\n`/like bd 8431020681`"
+    )
+
+@bot.message_handler(commands=['like'])
+def like_cmd(message):
+    try:
+        args = message.text.split()
+        if len(args) < 3:
+            bot.reply_to(
+                message,
+                "⚠️ Usage: `/like <server_name> <uid>`\nExample: `/like bd 8431020681`",
+                parse_mode="Markdown"
+            )
+            return
+
+        server = args[1]
+        uid = args[2]
+        api_key = "R1IsKing"
+
+        url = f"https://r1-like.vercel.app/like?server_name={server}&uid={uid}&KEY={api_key}"
+        response = requests.get(url, timeout=10)
+
+        if response.status_code != 200:
+            bot.reply_to(message, "❌ API Error! Please try again later.")
+            return
+
+        data = response.json()
+        print("API Response:", data)  # debug log for host
+
+        # --- Extract data safely ---
+        player = data.get("PlayerNickname", "Unknown")
+        before = data.get("LikesbeforeCommand", 0)
+        after = data.get("LikesafterCommand", 0)
+        given = data.get("LikesGivenByAPI", after - before)
+        region = data.get("Region", "N/A")
+        key_type = data.get("api_key_type", "Free")
+        remain = data.get("daily_requests_remaining", "N/A")
+        used = data.get("daily_requests_used", "N/A")
+        status = data.get("status", 0)
+
+        sender_name = message.from_user.first_name or "User"
+
+        if status == 2:
+            msg = (
+                f"👤 *{sender_name}*\n"
+                f"`/like {server} {uid}`\n\n"
+                f"🎉 *LIKE SENT SUCCESSFULLY!* 🎉\n\n"
+                f"🧑‍🎮 *Player:* `{player}`\n"
+                f"🆔 *UID:* `{uid}`\n"
+                f"🌍 *Region:* `{region}`\n"
+                f"💖 *Before Likes:* `{before}`\n"
+                f"💞 *After Likes:* `{after}`\n"
+                f"⚡ *Given by Bot:* `{given}`\n\n"
+                f"🔑 *Key Type:* `{key_type}`\n"
+                f"📊 *Used Today:* `{used}` / `{used + remain}`\n"
+                f"♻️ *Remaining Requests:* `{remain}`\n\n"
+                f"👑 *Owner ID:* `{OWNER_ID}`\n"
+                f"💠 *Owner:* {OWNER_NAME}"
+            )
+        else:
+            msg = f"❌ *Failed to send like!*\nCheck UID or server name."
+
+        bot.send_message(message.chat.id, msg)
+
+    except Exception as e:
+        bot.reply_to(message, f"⚠️ Error:\n`{e}`")
+
+print("🚀 LikeBot is running...")
+bot.infinity_polling()
