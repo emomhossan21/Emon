@@ -81,5 +81,6 @@ def like_cmd(message):
     except Exception as e:
         bot.reply_to(message, f"⚠️ Error:\n`{e}`")
 
+
 print("🚀 LikeBot is running...")
 bot.infinity_polling()
